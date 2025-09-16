@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon CodeLab - Live Web Compiler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712; /* fallback */
+            background-image: linear-gradient(to bottom right, #111827, #030712);
+        }
+        /* Simple scrollbar styling for a better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* bg-gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* bg-gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* bg-gray-500 */
+        }
+        .compiler-grid {
+            grid-template-rows: auto 1fr;
+        }
+        .editor-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+        .view {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .view-hidden {
+            opacity: 0;
+            transform: scale(0.98);
+            pointer-events: none;
+            position: absolute;
+        }
+        #resizer {
+            flex-shrink: 0;
+            width: 5px;
+            background-color: #4b5563; /* bg-gray-600 */
+            cursor: col-resize;
+            transition: background-color 0.2s ease;
+        }
+        #resizer:hover {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3b82f6; /* Blue */
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+         /* AI Chat Styles */
+        #ai-chat-history {
+            max-height: 400px;
+        }
+        .chat-message {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            line-height: 1.5;
+        }
+        .user-message {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            align-self: flex-end;
+        }
+        .ai-message {
+            background-color: #374151; /* gray-700 */
+            color: #d1d5db; /* gray-300 */
+            border-bottom-left-radius: 0.25rem;
+            align-self: flex-start;
+        }
+        .ai-thinking-bubble {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .ai-thinking-bubble .dot {
+            width: 8px;
+            height: 8px;
+            background-color: #9ca3af; /* gray-400 */
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .ai-thinking-bubble .dot:nth-child(1) { animation-delay: -0.32s; }
+        .ai-thinking-bubble .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 overflow-hidden">
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="relative">
+
+        <!-- Homescreen View -->
+        <div id="homescreen" class="view flex flex-col items-center justify-center h-screen p-4">
+            <div class="text-center mb-12">
+                <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-white">Dragon CodeLab</h1>
+                <p class="text-gray-400 mt-2 text-lg">A simple, modern, and live web compiler.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+                <!-- HTML Only Card -->
+                <div id="html-only-compiler-btn" class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-blue-500/20 ring-1 ring-white/10 hover:ring-2 hover:ring-blue-500 transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:scale-105">
+                    <div class="flex items-center gap-4 mb-3">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        <h2 class="text-2xl font-bold text-white">HTML Only</h2>
+                    </div>
+                    <p class="text-gray-400">Perfect for focusing on HTML structure and content. Get instant visual feedback on your markup.</p>
+                </div>
+                <!-- HTML, CSS, JS Card -->
+                <div id="full-stack-compiler-btn" class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-teal-500/20 ring-1 ring-white/10 hover:ring-2 hover:ring-teal-400 transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:scale-105">
+                    <div class="flex items-center gap-4 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 16v-2m0-10v-2m0 6v-2m-6-2h2m10 0h2M6 12H4m16 0h-2m-6 6h2m-6-2h2m2-6h-2m2 6h2" />
+                        </svg>
+                        <h2 class="text-2xl font-bold text-white">HTML, CSS & JS</h2>
+                    </div>
+                    <p class="text-gray-400">The complete playground. Style your content with CSS and add interactivity with JavaScript.</p>
+                </div>
+            </div>
+             <footer class="absolute bottom-4 text-gray-500 text-sm">
+                Create by Pixel Dragon
+            </footer>
+        </div>
+
+        <!-- Compiler View -->
+        <div id="compiler-view" class="view view-hidden h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-gray-800/70 backdrop-blur-sm border-b border-gray-700 p-3 flex items-center justify-between shadow-md z-10 flex-shrink-0">
+                <button id="back-btn" class="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors rounded-md px-3 py-1.5 hover:bg-white/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    <span class="font-medium">Home</span>
+                </button>
+                <h2 id="compiler-title" class="text-xl font-semibold text-white"></h2>
+                 <div class="flex items-center gap-2">
+                     <button id="ai-chat-btn" class="flex items-center space-x-2 text-white bg-green-600 hover:bg-green-700 transition-colors rounded-md px-3 py-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="font-medium hidden md:inline">AI Chat</span>
+                    </button>
+                    <button id="ai-build-btn" class="flex items-center space-x-2 text-white bg-purple-600 hover:bg-purple-700 transition-colors rounded-md px-3 py-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="font-medium hidden md:inline">AI Build</span>
+                    </button>
+                    <button id="download-btn" class="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors rounded-md px-3 py-1.5 hover:bg-white/10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span class="font-medium hidden md:inline">Download</span>
+                    </button>
+                     <button id="publish-btn" class="flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700 transition-colors rounded-md px-3 py-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span class="font-medium hidden md:inline">Publish</span>
+                    </button>
+                 </div>
+            </header>
+
+            <!-- Main Content (Editor + Preview) -->
+            <main id="compiler-main" class="flex-grow flex flex-col md:flex-row bg-gray-700 overflow-hidden">
+                <!-- Editor Pane -->
+                <div id="editor-pane" class="bg-gray-900 flex flex-col h-1/2 md:h-full md:w-1/2 overflow-hidden flex-shrink-0">
+                    <!-- HTML Only Editor -->
+                    <div id="html-only-editor-container" class="h-full">
+                        <textarea id="html-editor" class="w-full h-full bg-gray-900 border-none resize-none p-4 text-gray-300 font-mono focus:outline-none text-sm" placeholder="<!-- Write your HTML here -->"></textarea>
+                    </div>
+
+                    <!-- Full Stack Editor -->
+                    <div id="full-stack-editor-container" class="h-full flex flex-col">
+                        <div class="flex-shrink-0 bg-gray-800 flex border-b border-gray-700">
+                            <button data-tab="html" class="tab-btn bg-gray-900 text-white py-2 px-4 font-medium border-b-2 border-blue-500">HTML</button>
+                            <button data-tab="css" class="tab-btn text-gray-400 py-2 px-4 font-medium hover:bg-gray-700">CSS</button>
+                            <button data-tab="js" class="tab-btn text-gray-400 py-2 px-4 font-medium hover:bg-gray-700">JavaScript</button>
+                        </div>
+                        <div class="flex-grow relative">
+                            <textarea id="html-editor-full" data-tab-content="html" class="editor-textarea" placeholder="<!-- Write your HTML here -->"></textarea>
+                            <textarea id="css-editor-full" data-tab-content="css" class="editor-textarea hidden" placeholder="/* Write your CSS here */"></textarea>
+                            <textarea id="js-editor-full" data-tab-content="js" class="editor-textarea hidden" placeholder="// Write your JavaScript here"></textarea>
+                        </div>
+                        <style>
+                            .editor-textarea {
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 100%;
+                                background-color: #111827; /* bg-gray-900 */
+                                border: none;
+                                resize: none;
+                                padding: 1rem;
+                                color: #d1d5db; /* text-gray-300 */
+                                font-family: monospace;
+                                font-size: 0.875rem;
+                            }
+                            .editor-textarea:focus {
+                                outline: none;
+                            }
+                        </style>
+                    </div>
+                </div>
+
+                <!-- Resizer Handle -->
+                <div id="resizer" class="hidden md:block"></div>
+
+                <!-- Preview Pane -->
+                <div id="preview-pane" class="bg-white h-1/2 md:h-full flex-grow">
+                    <iframe id="preview-frame" class="w-full h-full border-none" title="Live Preview"></iframe>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- AI Build Modal -->
+    <div id="ai-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl p-6 border border-gray-700 transform transition-all opacity-0 scale-95" id="ai-modal-content">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Build with AI</h3>
+                    <p class="text-gray-400 text-sm mt-1">Describe what you want to create from scratch.</p>
+                </div>
+                <button id="close-ai-modal-btn" class="text-gray-400 hover:text-white transition-colors h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-700 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <textarea id="ai-prompt-input" class="w-full h-24 bg-gray-900 border border-gray-600 rounded-lg p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none" placeholder="e.g., a responsive login form with a 'forgot password' link"></textarea>
+            <div id="ai-error-message" class="text-red-400 text-sm mt-2 hidden"></div>
+            <div class="mt-4 flex items-center justify-end">
+                 <div id="ai-loader" class="loader mr-4 hidden"></div>
+                <button id="generate-ai-btn" class="bg-purple-600 text-white rounded-md px-5 py-2 hover:bg-purple-700 transition-colors font-semibold flex items-center gap-2 disabled:bg-purple-400 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                    Generate
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI Chat Modal -->
+    <div id="ai-chat-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-700 transform transition-all opacity-0 scale-95 flex flex-col" style="height: 70vh;" id="ai-chat-modal-content">
+            <div class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+                 <div class="flex items-center gap-3">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd" /></svg>
+                    <h3 class="text-xl font-bold text-white">AI Chat</h3>
+                </div>
+                <button id="close-ai-chat-modal-btn" class="text-gray-400 hover:text-white transition-colors h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-700 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="ai-chat-history" class="p-4 space-y-4 flex-grow overflow-y-auto flex flex-col">
+                <!-- Chat messages will be appended here -->
+            </div>
+             <div id="ai-chat-error" class="px-4 pb-2 text-red-400 text-sm hidden"></div>
+            <div class="p-4 border-t border-gray-700 flex-shrink-0">
+                <form id="ai-chat-form" class="flex items-center gap-2">
+                    <input id="ai-chat-input" type="text" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="e.g., 'Make the button blue'">
+                    <button type="submit" class="bg-green-600 text-white rounded-lg p-3 hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Deploy Modal -->
+    <div id="deploy-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl p-6 border border-gray-700 transform transition-all opacity-0 scale-95" id="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">Publish Successful</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <p class="text-gray-400 mb-4">Your project is now published. Share this link with anyone to show them your work.</p>
+            <div class="bg-gray-900 rounded-lg p-3 flex items-center">
+                <input id="share-link-input" type="text" readonly class="bg-transparent w-full text-gray-300 focus:outline-none pr-2">
+                <button id="copy-link-btn" class="bg-blue-600 text-white rounded-md px-4 py-1.5 ml-2 hover:bg-blue-700 transition-colors flex-shrink-0 w-24">Copy</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const homescreen = document.getElementById('homescreen');
+    const compilerView = document.getElementById('compiler-view');
+    const compilerTitle = document.getElementById('compiler-title');
+
+    const htmlOnlyBtn = document.getElementById('html-only-compiler-btn');
+    const fullStackBtn = document.getElementById('full-stack-compiler-btn');
+    const backBtn = document.getElementById('back-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const publishBtn = document.getElementById('publish-btn');
+    const aiBuildBtn = document.getElementById('ai-build-btn');
+    const aiChatBtn = document.getElementById('ai-chat-btn');
+    let currentCompilerMode = 'html'; // 'html' or 'full'
+    let chatHistory = [];
+
+    const mainContent = document.getElementById('compiler-main');
+    const editorPane = document.getElementById('editor-pane');
+    const resizer = document.getElementById('resizer');
+
+    const htmlOnlyEditorContainer = document.getElementById('html-only-editor-container');
+    const fullStackEditorContainer = document.getElementById('full-stack-editor-container');
+
+    // AI Build Modal Elements
+    const aiModal = document.getElementById('ai-modal');
+    const aiModalContent = document.getElementById('ai-modal-content');
+    const closeAiModalBtn = document.getElementById('close-ai-modal-btn');
+    const aiPromptInput = document.getElementById('ai-prompt-input');
+    const generateAiBtn = document.getElementById('generate-ai-btn');
+    const aiLoader = document.getElementById('ai-loader');
+    const aiErrorMessage = document.getElementById('ai-error-message');
+    
+    // AI Chat Modal Elements
+    const aiChatModal = document.getElementById('ai-chat-modal');
+    const aiChatModalContent = document.getElementById('ai-chat-modal-content');
+    const closeAiChatModalBtn = document.getElementById('close-ai-chat-modal-btn');
+    const aiChatHistory = document.getElementById('ai-chat-history');
+    const aiChatError = document.getElementById('ai-chat-error');
+    const aiChatForm = document.getElementById('ai-chat-form');
+    const aiChatInput = document.getElementById('ai-chat-input');
+
+
+    // Deploy Modal Elements
+    const deployModal = document.getElementById('deploy-modal');
+    const modalContent = document.getElementById('modal-content');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const shareLinkInput = document.getElementById('share-link-input');
+    const copyLinkBtn = document.getElementById('copy-link-btn');
+
+    // Editors
+    const htmlEditor = document.getElementById('html-editor');
+    const htmlEditorFull = document.getElementById('html-editor-full');
+    const cssEditorFull = document.getElementById('css-editor-full');
+    const jsEditorFull = document.getElementById('js-editor-full');
+
+    const previewFrame = document.getElementById('preview-frame');
+    
+    // Full stack editor tabs
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const editorTextareas = document.querySelectorAll('.editor-textarea');
+
+    // Initial content examples
+    const exampleHTML = `
+<div class="container">
+    <h1>Welcome to Dragon CodeLab!</h1>
+    <p>Use the AI Chat to modify this page.</p>
+    <button id="myButton">Click Me</button>
+</div>`;
+
+    const exampleCSS = `
+body {
+    font-family: sans-serif;
+    background-color: #f0f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: #333;
+}
+.container {
+    text-align: center;
+    background: white;
+    padding: 2em;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+h1 {
+    color: #1e40af;
+}
+button {
+    background-color: #be185d; /* Pink */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+button:hover {
+    background-color: #9d174d;
+    transform: translateY(-2px);
+}`;
+
+    const exampleJS = `
+const button = document.getElementById('myButton');
+const h1 = document.querySelector('h1');
+let clickCount = 0;
+
+button.addEventListener('click', () => {
+    clickCount++;
+    h1.textContent = \`You clicked \${clickCount} time\${clickCount > 1 ? 's' : ''}!\`;
+    button.textContent = 'Click me again!';
+});`;
+
+
+    // Functions
+    const showView = (viewName) => {
+        if (viewName === 'compiler') {
+            homescreen.classList.add('view-hidden');
+            compilerView.classList.remove('view-hidden');
+        } else {
+            compilerView.classList.add('view-hidden');
+            homescreen.classList.remove('view-hidden');
+        }
+    };
+
+    const setupCompiler = (mode, fromAI = false) => {
+        currentCompilerMode = mode;
+        aiBuildBtn.style.display = 'flex';
+        aiChatBtn.style.display = 'flex';
+
+        if (mode === 'html') {
+            compilerTitle.textContent = 'HTML Compiler';
+            htmlOnlyEditorContainer.classList.remove('hidden');
+            fullStackEditorContainer.classList.add('hidden');
+            if (!fromAI) {
+                htmlEditor.value = exampleHTML;
+                updateHtmlOnlyPreview();
+            }
+        } else if (mode === 'full') {
+            compilerTitle.textContent = 'HTML, CSS & JS Compiler';
+            htmlOnlyEditorContainer.classList.add('hidden');
+            fullStackEditorContainer.classList.remove('hidden');
+            if (!fromAI) {
+                htmlEditorFull.value = exampleHTML;
+                cssEditorFull.value = exampleCSS;
+                jsEditorFull.value = exampleJS;
+                switchTab('html');
+                updateFullPreview();
+            }
+        }
+        if(!fromAI) showView('compiler');
+    };
+
+    const updateHtmlOnlyPreview = () => {
+        previewFrame.srcdoc = htmlEditor.value;
+    };
+
+    const updateFullPreview = () => {
+        const sourceCode = `
+            <html>
+                <head>
+                    <style>${cssEditorFull.value}</style>
+                </head>
+                <body>
+                    ${htmlEditorFull.value}
+                    <script>${jsEditorFull.value}<\/script>
+                </body>
+            </html>
+        `;
+        previewFrame.srcdoc = sourceCode;
+    };
+
+    const switchTab = (tabName) => {
+        tabButtons.forEach(button => {
+            if(button.dataset.tab === tabName) {
+                button.classList.add('bg-gray-900', 'text-white', 'border-b-2', 'border-blue-500');
+                button.classList.remove('text-gray-400');
+            } else {
+                button.classList.remove('bg-gray-900', 'text-white', 'border-b-2', 'border-blue-500');
+                button.classList.add('text-gray-400');
+            }
+        });
+        editorTextareas.forEach(textarea => {
+            if (textarea.dataset.tabContent === tabName) {
+                textarea.classList.remove('hidden');
+            } else {
+                textarea.classList.add('hidden');
+            }
+        });
+    };
+
+    // Event Listeners
+    htmlOnlyBtn.addEventListener('click', () => setupCompiler('html'));
+    fullStackBtn.addEventListener('click', () => setupCompiler('full'));
+    backBtn.addEventListener('click', () => showView('home'));
+    publishBtn.addEventListener('click', handlePublish);
+    aiBuildBtn.addEventListener('click', () => showAiModal());
+    aiChatBtn.addEventListener('click', () => showAiChatModal());
+
+
+    // Live preview listeners
+    htmlEditor.addEventListener('input', updateHtmlOnlyPreview);
+    htmlEditorFull.addEventListener('input', updateFullPreview);
+    cssEditorFull.addEventListener('input', updateFullPreview);
+    jsEditorFull.addEventListener('input', updateFullPreview);
+    
+    // Tab switching listeners
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switchTab(button.dataset.tab);
+        });
+    });
+    
+    // Download handler
+    downloadBtn.addEventListener('click', () => {
+        let content = '';
+        let filename = 'index.html';
+        
+        if (currentCompilerMode === 'html') {
+            content = htmlEditor.value;
+        } else {
+             content = `
+            <html>
+                <head>
+                    <title>CodeLab Export</title>
+                    <style>${cssEditorFull.value}</style>
+                </head>
+                <body>
+                    ${htmlEditorFull.value}
+                    <script>${jsEditorFull.value}<\/script>
+                </body>
+            </html>
+        `;
+        }
+
+        const blob = new Blob([content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // --- AI Build Modal Logic ---
+    const showAiModal = () => {
+        aiModal.classList.remove('hidden');
+        aiPromptInput.value = '';
+        aiErrorMessage.classList.add('hidden');
+        setTimeout(() => {
+            aiModalContent.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+
+    const hideAiModal = () => {
+        aiModalContent.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            aiModal.classList.add('hidden');
+        }, 300);
+    };
+    
+    closeAiModalBtn.addEventListener('click', hideAiModal);
+    aiModal.addEventListener('click', (e) => {
+        if (e.target === aiModal) hideAiModal();
+    });
+    generateAiBtn.addEventListener('click', handleAiBuild);
+
+
+    // --- CORRECTED handleAiBuild FUNCTION ---
+    async function handleAiBuild() {
+        const userPrompt = aiPromptInput.value.trim();
+        if (!userPrompt) {
+            aiErrorMessage.textContent = 'Please enter a description of what you want to build.';
+            aiErrorMessage.classList.remove('hidden');
+            return;
+        }
+        
+        aiErrorMessage.classList.add('hidden');
+        generateAiBtn.disabled = true;
+        aiLoader.classList.remove('hidden');
+
+        const apiUrl = '/api/generate';
+
+        let payload;
+        let systemPrompt;
+        
+        if (currentCompilerMode === 'full') {
+             systemPrompt = `You are an expert web developer. Your task is to generate a complete, self-contained, and production-quality code snippet based on the user's request. You MUST provide the response in a single, valid JSON object with three keys: "html", "css", and "js". The "html" key should contain only the body-level HTML. The "css" key should contain all necessary CSS. The "js" key should contain all necessary JavaScript. The generated code should be modern, responsive, visually appealing, and substantial enough to fill the screen.`;
+            payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { "html": { "type": "STRING" }, "css": { "type": "STRING" }, "js": { "type": "STRING" } },
+                        required: ["html", "css", "js"]
+                    }
+                }
+            };
+        } else { // HTML Only mode
+            systemPrompt = `You are an expert web developer. Your task is to generate a complete, self-contained HTML snippet based on the user's request. You MUST provide only the body-level HTML. Do not include <html>, <head>, <body> tags, or any CSS, JavaScript, or markdown formatting. Ensure the generated HTML is substantial enough to be a good starting point and fills the screen with meaningful content.`;
+            payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+        }
+        
+        try {
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+            const codeText = candidate?.content?.parts?.[0]?.text;
+
+            if (codeText) {
+                if (currentCompilerMode === 'full') {
+                    const code = JSON.parse(codeText);
+                    if (htmlOnlyEditorContainer.offsetParent !== null) showView('compiler');
+                    setupCompiler('full', true); 
+                    htmlEditorFull.value = code.html || '';
+                    cssEditorFull.value = code.css || '';
+                    jsEditorFull.value = code.js || '';
+                    updateFullPreview();
+                    switchTab('html');
+                } else {
+                     htmlEditor.value = codeText;
+                     updateHtmlOnlyPreview();
+                }
+                hideAiModal();
+            } else {
+                 throw new Error('No valid code received from the AI.');
+            }
+        } catch (error) {
+            console.error("AI Build Error:", error);
+            let message = 'Could not connect to the AI service. Please check your server is running and the API key is correct.';
+            aiErrorMessage.textContent = message;
+            aiErrorMessage.classList.remove('hidden');
+        } finally {
+            generateAiBtn.disabled = false;
+            aiLoader.classList.add('hidden');
+        }
+    }
+    
+    // --- AI Chat Modal Logic ---
+    const showAiChatModal = () => {
+        aiChatHistory.innerHTML = ''; // Clear the view
+        if (chatHistory.length === 0) {
+            // If it's a new session, add the welcome message
+            const welcomeMsg = { sender: 'ai', text: 'Hello! How can I help you modify the code?' };
+            chatHistory.push(welcomeMsg);
+        }
+        // Re-render the entire history
+        chatHistory.forEach(msg => addMessageToChat(msg.sender, msg.text));
+
+        aiChatModal.classList.remove('hidden');
+        setTimeout(() => {
+            aiChatModalContent.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+
+    const hideAiChatModal = () => {
+        aiChatModalContent.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            aiChatModal.classList.add('hidden');
+        }, 300);
+    };
+    
+    const addMessageToChat = (sender, text) => {
+        const messageElement = document.createElement('div');
+        messageElement.className = `chat-message ${sender === 'user' ? 'user-message' : 'ai-message'}`;
+        messageElement.textContent = text;
+        aiChatHistory.appendChild(messageElement);
+        aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+        return messageElement;
+    }
+
+    const addThinkingIndicator = () => {
+        const thinkingElement = document.createElement('div');
+        thinkingElement.className = 'chat-message ai-message ai-thinking-bubble';
+        thinkingElement.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+        aiChatHistory.appendChild(thinkingElement);
+        aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+        return thinkingElement;
+    }
+    
+    closeAiChatModalBtn.addEventListener('click', hideAiChatModal);
+    aiChatModal.addEventListener('click', (e) => {
+        if (e.target === aiChatModal) hideAiChatModal();
+    });
+    aiChatForm.addEventListener('submit', handleAiChatSubmit);
+
+    // --- CORRECTED handleAiChatSubmit FUNCTION ---
+    async function handleAiChatSubmit(e) {
+        e.preventDefault();
+        const userPrompt = aiChatInput.value.trim();
+        if (!userPrompt) return;
+
+        addMessageToChat('user', userPrompt);
+        chatHistory.push({ sender: 'user', text: userPrompt });
+        aiChatInput.value = '';
+        aiChatForm.querySelector('button').disabled = true;
+        aiChatError.classList.add('hidden');
+        const thinkingIndicator = addThinkingIndicator();
+
+        const apiUrl = '/api/chat';
+        
+        let payload;
+        let systemPrompt;
+        let currentCode;
+
+        if (currentCompilerMode === 'full') {
+            currentCode = `HTML:\n\`\`\`html\n${htmlEditorFull.value}\n\`\`\`\n\nCSS:\n\`\`\`css\n${cssEditorFull.value}\n\`\`\`\n\nJavaScript:\n\`\`\`javascript\n${jsEditorFull.value}\n\`\`\``;
+            systemPrompt = `You are an AI assistant in a web code editor. The user has provided their current code. Your task is to modify this code based on their chat request. You MUST return a single, valid JSON object with the complete, updated code in the 'html', 'css', and 'js' keys. Do not omit any part of the original code unless the request requires it. Your response must only contain the JSON object.`;
+            payload = {
+                contents: [{ parts: [{ text: `Here is the current code:\n${currentCode}\n\nUser request: "${userPrompt}"` }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { "html": { "type": "STRING" }, "css": { "type": "STRING" }, "js": { "type": "STRING" } },
+                        required: ["html", "css", "js"]
+                    }
+                }
+            };
+        } else { // HTML Only mode
+            currentCode = htmlEditor.value;
+            systemPrompt = `You are an AI assistant in an HTML-only code editor. The user has provided their current HTML code. Your task is to modify this HTML based on their chat request. If the request involves styling (like changing colors), you MUST apply it using inline 'style' attributes or a '<style>' tag within the returned HTML. If the request involves interactivity, you MUST add the necessary JavaScript within a '<script>' tag inside the returned HTML. You must return a single, complete HTML string that is ready to be rendered. Do not include <html>, <head>, or <body> tags.`;
+             payload = {
+                contents: [{ parts: [{ text: `Here is the current HTML code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nUser request: "${userPrompt}"` }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+        }
+
+         try {
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+            const codeText = candidate?.content?.parts?.[0]?.text;
+
+            aiChatHistory.removeChild(thinkingIndicator);
+
+            if (codeText) {
+                 const aiResponseText = 'OK! I have updated the code for you.';
+                 addMessageToChat('ai', aiResponseText);
+                 chatHistory.push({ sender: 'ai', text: aiResponseText });
+                if (currentCompilerMode === 'full') {
+                    const code = JSON.parse(codeText);
+                    htmlEditorFull.value = code.html ?? htmlEditorFull.value;
+                    cssEditorFull.value = code.css ?? cssEditorFull.value;
+                    jsEditorFull.value = code.js ?? jsEditorFull.value;
+                    updateFullPreview();
+                } else { // HTML Only
+                     htmlEditor.value = codeText;
+                     updateHtmlOnlyPreview();
+                }
+            } else {
+                 throw new Error('No valid code received from the AI.');
+            }
+        } catch (error) {
+            aiChatHistory.removeChild(thinkingIndicator);
+            console.error("AI Chat Error:", error);
+            let message = 'An error occurred. Please try again.';
+            aiChatError.textContent = message;
+            aiChatError.classList.remove('hidden');
+            const errorResponseText = 'Sorry, I ran into an issue. Please try rephrasing your request.';
+            addMessageToChat('ai', errorResponseText);
+            chatHistory.push({ sender: 'ai', text: errorResponseText });
+        } finally {
+            aiChatForm.querySelector('button').disabled = false;
+        }
+    }
+
+
+    // --- Deploy Modal Logic ---
+    const showModal = () => {
+        deployModal.classList.remove('hidden');
+        setTimeout(() => {
+            modalContent.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+
+    const hideModal = () => {
+        modalContent.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            deployModal.classList.add('hidden');
+        }, 300);
+    };
+
+    function handlePublish() {
+        let content = '';
+        if (currentCompilerMode === 'html') {
+            content = htmlEditor.value;
+        } else {
+             content = `
+                <html>
+                    <head>
+                        <title>CodeLab Export</title>
+                        <style>${cssEditorFull.value}</style>
+                    </head>
+                    <body>
+                        ${htmlEditorFull.value}
+                        <script>${jsEditorFull.value}<\/script>
+                    </body>
+                </html>
+            `;
+        }
+
+        const dataUri = `data:text/html;charset=utf-8,${encodeURIComponent(content)}`;
+        shareLinkInput.value = dataUri;
+        showModal();
+    }
+
+    function copyShareLink() {
+        shareLinkInput.select();
+        try {
+            document.execCommand('copy');
+            copyLinkBtn.textContent = 'Copied!';
+            setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+            copyLinkBtn.textContent = 'Error';
+             setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
+        }
+    }
+    
+    closeModalBtn.addEventListener('click', hideModal);
+    copyLinkBtn.addEventListener('click', copyShareLink);
+    deployModal.addEventListener('click', (e) => {
+        if (e.target === deployModal) hideModal();
+    });
+
+
+    // Resizer logic
+    const resize = (e) => {
+        const newWidth = e.clientX - editorPane.getBoundingClientRect().left;
+        const totalWidth = mainContent.clientWidth;
+        const newWidthPercent = (newWidth / totalWidth) * 100;
+         if (newWidthPercent > 10 && newWidthPercent < 90) {
+            editorPane.style.width = newWidthPercent + '%';
+        }
+    };
+
+    resizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', () => {
+            document.removeEventListener('mousemove', resize);
+        }, { once: true });
+    });
+    
+</script>
+</body>
+</html>
