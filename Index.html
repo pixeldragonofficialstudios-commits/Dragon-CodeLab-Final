@@ -264,7 +264,7 @@
     
     <!-- AI Chat Modal -->
     <div id="ai-chat-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-700 transform transition-all opacity-0 scale-95 flex flex-col" style="height: 70vh;" id="ai-chat-modal-content">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-700 transform transition-all opacity-0 scale-95 flex flex-col" id="ai-chat-modal-content">
             <div class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
                  <div class="flex items-center gap-3">
                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd" /></svg>
@@ -311,508 +311,362 @@
         </div>
     </div>
 
-<script>
-    // DOM Elements
-    const homescreen = document.getElementById('homescreen');
-    const compilerView = document.getElementById('compiler-view');
-    const compilerTitle = document.getElementById('compiler-title');
+    <script>
+        // DOM Elements
+        const homescreen = document.getElementById('homescreen');
+        const compilerView = document.getElementById('compiler-view');
+        const compilerTitle = document.getElementById('compiler-title');
 
-    const htmlOnlyBtn = document.getElementById('html-only-compiler-btn');
-    const fullStackBtn = document.getElementById('full-stack-compiler-btn');
-    const backBtn = document.getElementById('back-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    const publishBtn = document.getElementById('publish-btn');
-    const aiBuildBtn = document.getElementById('ai-build-btn');
-    const aiChatBtn = document.getElementById('ai-chat-btn');
-    let currentCompilerMode = 'html'; // 'html' or 'full'
-    let chatHistory = [];
+        const htmlOnlyBtn = document.getElementById('html-only-compiler-btn');
+        const fullStackBtn = document.getElementById('full-stack-compiler-btn');
+        const backBtn = document.getElementById('back-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const publishBtn = document.getElementById('publish-btn');
+        const aiBuildBtn = document.getElementById('ai-build-btn');
+        const aiChatBtn = document.getElementById('ai-chat-btn');
+        let currentCompilerMode = 'html'; // 'html' or 'full'
+        let chatHistory = [];
 
-    const mainContent = document.getElementById('compiler-main');
-    const editorPane = document.getElementById('editor-pane');
-    const resizer = document.getElementById('resizer');
+        const mainContent = document.getElementById('compiler-main');
+        const editorPane = document.getElementById('editor-pane');
+        const resizer = document.getElementById('resizer');
 
-    const htmlOnlyEditorContainer = document.getElementById('html-only-editor-container');
-    const fullStackEditorContainer = document.getElementById('full-stack-editor-container');
+        const htmlOnlyEditorContainer = document.getElementById('html-only-editor-container');
+        const fullStackEditorContainer = document.getElementById('full-stack-editor-container');
 
-    // AI Build Modal Elements
-    const aiModal = document.getElementById('ai-modal');
-    const aiModalContent = document.getElementById('ai-modal-content');
-    const closeAiModalBtn = document.getElementById('close-ai-modal-btn');
-    const aiPromptInput = document.getElementById('ai-prompt-input');
-    const generateAiBtn = document.getElementById('generate-ai-btn');
-    const aiLoader = document.getElementById('ai-loader');
-    const aiErrorMessage = document.getElementById('ai-error-message');
-    
-    // AI Chat Modal Elements
-    const aiChatModal = document.getElementById('ai-chat-modal');
-    const aiChatModalContent = document.getElementById('ai-chat-modal-content');
-    const closeAiChatModalBtn = document.getElementById('close-ai-chat-modal-btn');
-    const aiChatHistory = document.getElementById('ai-chat-history');
-    const aiChatError = document.getElementById('ai-chat-error');
-    const aiChatForm = document.getElementById('ai-chat-form');
-    const aiChatInput = document.getElementById('ai-chat-input');
+        // AI Build Modal Elements
+        const aiModal = document.getElementById('ai-modal');
+        const aiModalContent = document.getElementById('ai-modal-content');
+        const closeAiModalBtn = document.getElementById('close-ai-modal-btn');
+        const aiPromptInput = document.getElementById('ai-prompt-input');
+        const generateAiBtn = document.getElementById('generate-ai-btn');
+        const aiLoader = document.getElementById('ai-loader');
+        const aiErrorMessage = document.getElementById('ai-error-message');
+        
+        // AI Chat Modal Elements
+        const aiChatModal = document.getElementById('ai-chat-modal');
+        const aiChatModalContent = document.getElementById('ai-chat-modal-content');
+        const closeAiChatModalBtn = document.getElementById('close-ai-chat-modal-btn');
+        const aiChatHistory = document.getElementById('ai-chat-history');
+        const aiChatError = document.getElementById('ai-chat-error');
+        const aiChatForm = document.getElementById('ai-chat-form');
+        const aiChatInput = document.getElementById('ai-chat-input');
 
 
-    // Deploy Modal Elements
-    const deployModal = document.getElementById('deploy-modal');
-    const modalContent = document.getElementById('modal-content');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-    const shareLinkInput = document.getElementById('share-link-input');
-    const copyLinkBtn = document.getElementById('copy-link-btn');
+        // Deploy Modal Elements
+        const deployModal = document.getElementById('deploy-modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const shareLinkInput = document.getElementById('share-link-input');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
 
-    // Editors
-    const htmlEditor = document.getElementById('html-editor');
-    const htmlEditorFull = document.getElementById('html-editor-full');
-    const cssEditorFull = document.getElementById('css-editor-full');
-    const jsEditorFull = document.getElementById('js-editor-full');
+        // Editors
+        const htmlEditor = document.getElementById('html-editor');
+        const htmlEditorFull = document.getElementById('html-editor-full');
+        const cssEditorFull = document.getElementById('css-editor-full');
+        const jsEditorFull = document.getElementById('js-editor-full');
 
-    const previewFrame = document.getElementById('preview-frame');
-    
-    // Full stack editor tabs
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const editorTextareas = document.querySelectorAll('.editor-textarea');
+        const previewFrame = document.getElementById('preview-frame');
+        
+        // Full stack editor tabs
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const editorTextareas = document.querySelectorAll('.editor-textarea');
 
-    // Initial content examples
-    const exampleHTML = `
-<div class="container">
-    <h1>Welcome to Dragon CodeLab!</h1>
-    <p>Use the AI Chat to modify this page.</p>
-    <button id="myButton">Click Me</button>
-</div>`;
+        // Initial content examples
+        const defaultProjectHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon Compiler Demo</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        p {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        #output {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Dragon Compiler!</h1>
+        <p>This is a complete HTML page with embedded CSS and JavaScript.</p>
+        <button onclick="changeColor()">Click me to change colors!</button>
+        <div id="output"></div>
+    </div>
 
-    const exampleCSS = `
-body {
-    font-family: sans-serif;
-    background-color: #f0f4f8;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    <script>
+        function changeColor() {
+            const colors = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+            ];
+            
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            document.body.style.background = randomColor;
+            
+            const output = document.getElementById('output');
+            output.innerHTML = '<h3>🎉 Background changed!</h3><p>The magic of JavaScript in action!</p>';
+            
+            setTimeout(() => {
+                output.innerHTML += '<p style="color: #28a745;">✨ Dragon Compiler is awesome! ✨</p>';
+            }, 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dragon Compiler is ready! 🐉🚀');
+            
+            const output = document.getElementById('output');
+            output.innerHTML = '<p style="color: #6c757d;">Click the button above to see the magic happen!</p>';
+        });
+    <\/script>
+</body>
+</html>`;
+
+        const defaultProjectBody = `<div class="container">
+        <h1>Welcome to Dragon Compiler!</h1>
+        <p>This is a complete HTML page with embedded CSS and JavaScript.</p>
+        <button onclick="changeColor()">Click me to change colors!</button>
+        <div id="output"></div>
+    </div>`;
+        
+        const defaultProjectCSS = `body {
+    font-family: 'Arial', sans-serif;
     margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
     color: #333;
 }
 .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     text-align: center;
-    background: white;
-    padding: 2em;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 h1 {
-    color: #1e40af;
+    color: #333;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+p {
+    color: #666;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    line-height: 1.6;
 }
 button {
-    background-color: #be185d; /* Pink */
+    padding: 15px 30px;
+    font-size: 1.1em;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 25px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 button:hover {
-    background-color: #9d174d;
     transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+#output {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
 }`;
 
-    const exampleJS = `
-const button = document.getElementById('myButton');
-const h1 = document.querySelector('h1');
-let clickCount = 0;
+        const defaultProjectJS = `function changeColor() {
+    const colors = [
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+    ];
+    
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    document.body.style.background = randomColor;
+    
+    const output = document.getElementById('output');
+    output.innerHTML = '<h3>🎉 Background changed!</h3><p>The magic of JavaScript in action!</p>';
+    
+    setTimeout(() => {
+        output.innerHTML += '<p style="color: #28a745;">✨ Dragon Compiler is awesome! ✨</p>';
+    }, 1000);
+}
 
-button.addEventListener('click', () => {
-    clickCount++;
-    h1.textContent = \`You clicked \${clickCount} time\${clickCount > 1 ? 's' : ''}!\`;
-    button.textContent = 'Click me again!';
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dragon Compiler is ready! 🐉🚀');
+    
+    const output = document.getElementById('output');
+    output.innerHTML = '<p style="color: #6c757d;">Click the button above to see the magic happen!</p>';
 });`;
 
 
-    // Functions
-    const showView = (viewName) => {
-        if (viewName === 'compiler') {
-            homescreen.classList.add('view-hidden');
-            compilerView.classList.remove('view-hidden');
-        } else {
-            compilerView.classList.add('view-hidden');
-            homescreen.classList.remove('view-hidden');
-        }
-    };
-
-    const setupCompiler = (mode, fromAI = false) => {
-        currentCompilerMode = mode;
-        aiBuildBtn.style.display = 'flex';
-        aiChatBtn.style.display = 'flex';
-
-        if (mode === 'html') {
-            compilerTitle.textContent = 'HTML Compiler';
-            htmlOnlyEditorContainer.classList.remove('hidden');
-            fullStackEditorContainer.classList.add('hidden');
-            if (!fromAI) {
-                htmlEditor.value = exampleHTML;
-                updateHtmlOnlyPreview();
-            }
-        } else if (mode === 'full') {
-            compilerTitle.textContent = 'HTML, CSS & JS Compiler';
-            htmlOnlyEditorContainer.classList.add('hidden');
-            fullStackEditorContainer.classList.remove('hidden');
-            if (!fromAI) {
-                htmlEditorFull.value = exampleHTML;
-                cssEditorFull.value = exampleCSS;
-                jsEditorFull.value = exampleJS;
-                switchTab('html');
-                updateFullPreview();
-            }
-        }
-        if(!fromAI) showView('compiler');
-    };
-
-    const updateHtmlOnlyPreview = () => {
-        previewFrame.srcdoc = htmlEditor.value;
-    };
-
-    const updateFullPreview = () => {
-        const sourceCode = `
-            <html>
-                <head>
-                    <style>${cssEditorFull.value}</style>
-                </head>
-                <body>
-                    ${htmlEditorFull.value}
-                    <script>${jsEditorFull.value}<\/script>
-                </body>
-            </html>
-        `;
-        previewFrame.srcdoc = sourceCode;
-    };
-
-    const switchTab = (tabName) => {
-        tabButtons.forEach(button => {
-            if(button.dataset.tab === tabName) {
-                button.classList.add('bg-gray-900', 'text-white', 'border-b-2', 'border-blue-500');
-                button.classList.remove('text-gray-400');
+        // Functions
+        const showView = (viewName) => {
+            if (viewName === 'compiler') {
+                homescreen.classList.add('view-hidden');
+                compilerView.classList.remove('view-hidden');
             } else {
-                button.classList.remove('bg-gray-900', 'text-white', 'border-b-2', 'border-blue-500');
-                button.classList.add('text-gray-400');
+                compilerView.classList.add('view-hidden');
+                homescreen.classList.remove('view-hidden');
             }
-        });
-        editorTextareas.forEach(textarea => {
-            if (textarea.dataset.tabContent === tabName) {
-                textarea.classList.remove('hidden');
-            } else {
-                textarea.classList.add('hidden');
-            }
-        });
-    };
+        };
 
-    // Event Listeners
-    htmlOnlyBtn.addEventListener('click', () => setupCompiler('html'));
-    fullStackBtn.addEventListener('click', () => setupCompiler('full'));
-    backBtn.addEventListener('click', () => showView('home'));
-    publishBtn.addEventListener('click', handlePublish);
-    aiBuildBtn.addEventListener('click', () => showAiModal());
-    aiChatBtn.addEventListener('click', () => showAiChatModal());
+        const setupCompiler = (mode, fromAI = false) => {
+            currentCompilerMode = mode;
+            aiBuildBtn.style.display = 'flex';
+            aiChatBtn.style.display = 'flex';
 
-
-    // Live preview listeners
-    htmlEditor.addEventListener('input', updateHtmlOnlyPreview);
-    htmlEditorFull.addEventListener('input', updateFullPreview);
-    cssEditorFull.addEventListener('input', updateFullPreview);
-    jsEditorFull.addEventListener('input', updateFullPreview);
-    
-    // Tab switching listeners
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            switchTab(button.dataset.tab);
-        });
-    });
-    
-    // Download handler
-    downloadBtn.addEventListener('click', () => {
-        let content = '';
-        let filename = 'index.html';
-        
-        if (currentCompilerMode === 'html') {
-            content = htmlEditor.value;
-        } else {
-             content = `
-            <html>
-                <head>
-                    <title>CodeLab Export</title>
-                    <style>${cssEditorFull.value}</style>
-                </head>
-                <body>
-                    ${htmlEditorFull.value}
-                    <script>${jsEditorFull.value}<\/script>
-                </body>
-            </html>
-        `;
-        }
-
-        const blob = new Blob([content], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    // --- AI Build Modal Logic ---
-    const showAiModal = () => {
-        aiModal.classList.remove('hidden');
-        aiPromptInput.value = '';
-        aiErrorMessage.classList.add('hidden');
-        setTimeout(() => {
-            aiModalContent.classList.remove('opacity-0', 'scale-95');
-        }, 10);
-    };
-
-    const hideAiModal = () => {
-        aiModalContent.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => {
-            aiModal.classList.add('hidden');
-        }, 300);
-    };
-    
-    closeAiModalBtn.addEventListener('click', hideAiModal);
-    aiModal.addEventListener('click', (e) => {
-        if (e.target === aiModal) hideAiModal();
-    });
-    generateAiBtn.addEventListener('click', handleAiBuild);
-
-
-    // --- CORRECTED handleAiBuild FUNCTION ---
-    async function handleAiBuild() {
-        const userPrompt = aiPromptInput.value.trim();
-        if (!userPrompt) {
-            aiErrorMessage.textContent = 'Please enter a description of what you want to build.';
-            aiErrorMessage.classList.remove('hidden');
-            return;
-        }
-        
-        aiErrorMessage.classList.add('hidden');
-        generateAiBtn.disabled = true;
-        aiLoader.classList.remove('hidden');
-
-        const apiUrl = '/api/generate';
-
-        let payload;
-        let systemPrompt;
-        
-        if (currentCompilerMode === 'full') {
-             systemPrompt = `You are an expert web developer. Your task is to generate a complete, self-contained, and production-quality code snippet based on the user's request. You MUST provide the response in a single, valid JSON object with three keys: "html", "css", and "js". The "html" key should contain only the body-level HTML. The "css" key should contain all necessary CSS. The "js" key should contain all necessary JavaScript. The generated code should be modern, responsive, visually appealing, and substantial enough to fill the screen.`;
-            payload = {
-                contents: [{ parts: [{ text: userPrompt }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: { "html": { "type": "STRING" }, "css": { "type": "STRING" }, "js": { "type": "STRING" } },
-                        required: ["html", "css", "js"]
-                    }
+            if (mode === 'html') {
+                compilerTitle.textContent = 'HTML Compiler';
+                htmlOnlyEditorContainer.classList.remove('hidden');
+                fullStackEditorContainer.classList.add('hidden');
+                if (!fromAI) {
+                    htmlEditor.value = defaultProjectHTML;
+                    updateHtmlOnlyPreview();
                 }
-            };
-        } else { // HTML Only mode
-            systemPrompt = `You are an expert web developer. Your task is to generate a complete, self-contained HTML snippet based on the user's request. You MUST provide only the body-level HTML. Do not include <html>, <head>, <body> tags, or any CSS, JavaScript, or markdown formatting. Ensure the generated HTML is substantial enough to be a good starting point and fills the screen with meaningful content.`;
-            payload = {
-                contents: [{ parts: [{ text: userPrompt }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-            };
-        }
-        
-        try {
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-            const result = await response.json();
-            const candidate = result.candidates?.[0];
-            const codeText = candidate?.content?.parts?.[0]?.text;
-
-            if (codeText) {
-                if (currentCompilerMode === 'full') {
-                    const code = JSON.parse(codeText);
-                    if (htmlOnlyEditorContainer.offsetParent !== null) showView('compiler');
-                    setupCompiler('full', true); 
-                    htmlEditorFull.value = code.html || '';
-                    cssEditorFull.value = code.css || '';
-                    jsEditorFull.value = code.js || '';
-                    updateFullPreview();
+            } else if (mode === 'full') {
+                compilerTitle.textContent = 'HTML, CSS & JS Compiler';
+                htmlOnlyEditorContainer.classList.add('hidden');
+                fullStackEditorContainer.classList.remove('hidden');
+                if (!fromAI) {
+                    htmlEditorFull.value = defaultProjectBody;
+                    cssEditorFull.value = defaultProjectCSS;
+                    jsEditorFull.value = defaultProjectJS;
                     switchTab('html');
-                } else {
-                     htmlEditor.value = codeText;
-                     updateHtmlOnlyPreview();
-                }
-                hideAiModal();
-            } else {
-                 throw new Error('No valid code received from the AI.');
-            }
-        } catch (error) {
-            console.error("AI Build Error:", error);
-            let message = 'Could not connect to the AI service. Please check your server is running and the API key is correct.';
-            aiErrorMessage.textContent = message;
-            aiErrorMessage.classList.remove('hidden');
-        } finally {
-            generateAiBtn.disabled = false;
-            aiLoader.classList.add('hidden');
-        }
-    }
-    
-    // --- AI Chat Modal Logic ---
-    const showAiChatModal = () => {
-        aiChatHistory.innerHTML = ''; // Clear the view
-        if (chatHistory.length === 0) {
-            // If it's a new session, add the welcome message
-            const welcomeMsg = { sender: 'ai', text: 'Hello! How can I help you modify the code?' };
-            chatHistory.push(welcomeMsg);
-        }
-        // Re-render the entire history
-        chatHistory.forEach(msg => addMessageToChat(msg.sender, msg.text));
-
-        aiChatModal.classList.remove('hidden');
-        setTimeout(() => {
-            aiChatModalContent.classList.remove('opacity-0', 'scale-95');
-        }, 10);
-    };
-
-    const hideAiChatModal = () => {
-        aiChatModalContent.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => {
-            aiChatModal.classList.add('hidden');
-        }, 300);
-    };
-    
-    const addMessageToChat = (sender, text) => {
-        const messageElement = document.createElement('div');
-        messageElement.className = `chat-message ${sender === 'user' ? 'user-message' : 'ai-message'}`;
-        messageElement.textContent = text;
-        aiChatHistory.appendChild(messageElement);
-        aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
-        return messageElement;
-    }
-
-    const addThinkingIndicator = () => {
-        const thinkingElement = document.createElement('div');
-        thinkingElement.className = 'chat-message ai-message ai-thinking-bubble';
-        thinkingElement.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
-        aiChatHistory.appendChild(thinkingElement);
-        aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
-        return thinkingElement;
-    }
-    
-    closeAiChatModalBtn.addEventListener('click', hideAiChatModal);
-    aiChatModal.addEventListener('click', (e) => {
-        if (e.target === aiChatModal) hideAiChatModal();
-    });
-    aiChatForm.addEventListener('submit', handleAiChatSubmit);
-
-    // --- CORRECTED handleAiChatSubmit FUNCTION ---
-    async function handleAiChatSubmit(e) {
-        e.preventDefault();
-        const userPrompt = aiChatInput.value.trim();
-        if (!userPrompt) return;
-
-        addMessageToChat('user', userPrompt);
-        chatHistory.push({ sender: 'user', text: userPrompt });
-        aiChatInput.value = '';
-        aiChatForm.querySelector('button').disabled = true;
-        aiChatError.classList.add('hidden');
-        const thinkingIndicator = addThinkingIndicator();
-
-        const apiUrl = '/api/chat';
-        
-        let payload;
-        let systemPrompt;
-        let currentCode;
-
-        if (currentCompilerMode === 'full') {
-            currentCode = `HTML:\n\`\`\`html\n${htmlEditorFull.value}\n\`\`\`\n\nCSS:\n\`\`\`css\n${cssEditorFull.value}\n\`\`\`\n\nJavaScript:\n\`\`\`javascript\n${jsEditorFull.value}\n\`\`\``;
-            systemPrompt = `You are an AI assistant in a web code editor. The user has provided their current code. Your task is to modify this code based on their chat request. You MUST return a single, valid JSON object with the complete, updated code in the 'html', 'css', and 'js' keys. Do not omit any part of the original code unless the request requires it. Your response must only contain the JSON object.`;
-            payload = {
-                contents: [{ parts: [{ text: `Here is the current code:\n${currentCode}\n\nUser request: "${userPrompt}"` }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: { "html": { "type": "STRING" }, "css": { "type": "STRING" }, "js": { "type": "STRING" } },
-                        required: ["html", "css", "js"]
-                    }
-                }
-            };
-        } else { // HTML Only mode
-            currentCode = htmlEditor.value;
-            systemPrompt = `You are an AI assistant in an HTML-only code editor. The user has provided their current HTML code. Your task is to modify this HTML based on their chat request. If the request involves styling (like changing colors), you MUST apply it using inline 'style' attributes or a '<style>' tag within the returned HTML. If the request involves interactivity, you MUST add the necessary JavaScript within a '<script>' tag inside the returned HTML. You must return a single, complete HTML string that is ready to be rendered. Do not include <html>, <head>, or <body> tags.`;
-             payload = {
-                contents: [{ parts: [{ text: `Here is the current HTML code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nUser request: "${userPrompt}"` }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-            };
-        }
-
-         try {
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-            const result = await response.json();
-            const candidate = result.candidates?.[0];
-            const codeText = candidate?.content?.parts?.[0]?.text;
-
-            aiChatHistory.removeChild(thinkingIndicator);
-
-            if (codeText) {
-                 const aiResponseText = 'OK! I have updated the code for you.';
-                 addMessageToChat('ai', aiResponseText);
-                 chatHistory.push({ sender: 'ai', text: aiResponseText });
-                if (currentCompilerMode === 'full') {
-                    const code = JSON.parse(codeText);
-                    htmlEditorFull.value = code.html ?? htmlEditorFull.value;
-                    cssEditorFull.value = code.css ?? cssEditorFull.value;
-                    jsEditorFull.value = code.js ?? jsEditorFull.value;
                     updateFullPreview();
-                } else { // HTML Only
-                     htmlEditor.value = codeText;
-                     updateHtmlOnlyPreview();
                 }
-            } else {
-                 throw new Error('No valid code received from the AI.');
             }
-        } catch (error) {
-            aiChatHistory.removeChild(thinkingIndicator);
-            console.error("AI Chat Error:", error);
-            let message = 'An error occurred. Please try again.';
-            aiChatError.textContent = message;
-            aiChatError.classList.remove('hidden');
-            const errorResponseText = 'Sorry, I ran into an issue. Please try rephrasing your request.';
-            addMessageToChat('ai', errorResponseText);
-            chatHistory.push({ sender: 'ai', text: errorResponseText });
-        } finally {
-            aiChatForm.querySelector('button').disabled = false;
-        }
-    }
+            if(!fromAI) showView('compiler');
+        };
+
+        const updateHtmlOnlyPreview = () => {
+            previewFrame.srcdoc = htmlEditor.value;
+        };
+
+        const updateFullPreview = () => {
+            const sourceCode = `
+                <html>
+                    <head>
+                        <style>${cssEditorFull.value}</style>
+                    </head>
+                    <body>
+                        ${htmlEditorFull.value}
+                        <script>${jsEditorFull.value}<\/script>
+                    </body>
+                </html>
+            `;
+            previewFrame.srcdoc = sourceCode;
+        };
+
+        const switchTab = (tabName) => {
+            tabButtons.forEach(button => {
+                if(button.dataset.tab === tabName) {
+                    button.classList.add('bg-gray-900', 'text-white', 'border-b-2', 'border-blue-500');
+                    button.classList.remove('text-gray-400');
+                } else {
+                    button.classList.remove('bg-gray-900', 'text-white', 'border-b-2', 'border-blue-500');
+                    button.classList.add('text-gray-400');
+                }
+            });
+            editorTextareas.forEach(textarea => {
+                if (textarea.dataset.tabContent === tabName) {
+                    textarea.classList.remove('hidden');
+                } else {
+                    textarea.classList.add('hidden');
+                }
+            });
+        };
+
+        // Event Listeners
+        htmlOnlyBtn.addEventListener('click', () => setupCompiler('html'));
+        fullStackBtn.addEventListener('click', () => setupCompiler('full'));
+        backBtn.addEventListener('click', () => showView('home'));
+        publishBtn.addEventListener('click', handlePublish);
+        aiBuildBtn.addEventListener('click', () => showAiModal());
+        aiChatBtn.addEventListener('click', () => showAiChatModal());
 
 
-    // --- Deploy Modal Logic ---
-    const showModal = () => {
-        deployModal.classList.remove('hidden');
-        setTimeout(() => {
-            modalContent.classList.remove('opacity-0', 'scale-95');
-        }, 10);
-    };
-
-    const hideModal = () => {
-        modalContent.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => {
-            deployModal.classList.add('hidden');
-        }, 300);
-    };
-
-    function handlePublish() {
-        let content = '';
-        if (currentCompilerMode === 'html') {
-            content = htmlEditor.value;
-        } else {
-             content = `
+        // Live preview listeners
+        htmlEditor.addEventListener('input', updateHtmlOnlyPreview);
+        htmlEditorFull.addEventListener('input', updateFullPreview);
+        cssEditorFull.addEventListener('input', updateFullPreview);
+        jsEditorFull.addEventListener('input', updateFullPreview);
+        
+        // Tab switching listeners
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                switchTab(button.dataset.tab);
+            });
+        });
+        
+        // Download handler
+        downloadBtn.addEventListener('click', () => {
+            let content = '';
+            let filename = 'index.html';
+            
+            if (currentCompilerMode === 'html') {
+                content = htmlEditor.value;
+            } else {
+                 content = `
                 <html>
                     <head>
                         <title>CodeLab Export</title>
@@ -824,51 +678,342 @@ button.addEventListener('click', () => {
                     </body>
                 </html>
             `;
+            }
+
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // --- AI Build Modal Logic ---
+        const showAiModal = () => {
+            aiModal.classList.remove('hidden');
+            aiPromptInput.value = '';
+            aiErrorMessage.classList.add('hidden');
+            setTimeout(() => {
+                aiModalContent.classList.remove('opacity-0', 'scale-95');
+            }, 10);
+        };
+
+        const hideAiModal = () => {
+            aiModalContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                aiModal.classList.add('hidden');
+            }, 300);
+        };
+        
+        closeAiModalBtn.addEventListener('click', hideAiModal);
+        aiModal.addEventListener('click', (e) => {
+            if (e.target === aiModal) hideAiModal();
+        });
+        generateAiBtn.addEventListener('click', handleAiBuild);
+
+
+        async function handleAiBuild() {
+            const userPrompt = aiPromptInput.value.trim();
+            if (!userPrompt) {
+                aiErrorMessage.textContent = 'Please enter a description of what you want to build.';
+                aiErrorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            aiErrorMessage.classList.add('hidden');
+            generateAiBtn.disabled = true;
+            aiLoader.classList.remove('hidden');
+
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            let payload;
+            let systemPrompt;
+            
+            if (currentCompilerMode === 'full') {
+                 systemPrompt = `You are an expert web developer. Your task is to generate a complete, self-contained, and production-quality code snippet based on the user's request. The result should be a rich, complete component, not just a single element. You MUST provide the response in a single, valid JSON object with three keys: "html", "css", and "js". The "html" key should contain only the body-level HTML. The "css" key should contain all necessary CSS. The "js" key should contain all necessary JavaScript. The generated code should be modern, responsive, visually appealing, and substantial enough to fill the screen.`;
+                payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: { "html": { "type": "STRING" }, "css": { "type": "STRING" }, "js": { "type": "STRING" } },
+                            required: ["html", "css", "js"]
+                        }
+                    }
+                };
+            } else { // HTML Only mode
+                systemPrompt = `You are an expert web developer. Your task is to generate a single, complete, and self-contained HTML document based on the user's request.
+
+You MUST provide a full HTML structure, including \`<html>\`, \`<head>\`, and \`<body>\` tags.
+- Any necessary CSS styling MUST be included inside a \`<style>\` tag within the \`<head>\`.
+- Any necessary JavaScript for interactivity MUST be included inside a \`<script>\` tag, placed just before the closing \`</body>\` tag.
+- Do not use external libraries or assets.
+
+The final output should be a visually appealing, well-formatted, and fully functional webpage that is ready to be saved as an .html file and run directly. It should be a substantial component that looks good and fills the preview screen.`;
+                payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+            }
+            
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+                const codeText = candidate?.content?.parts?.[0]?.text;
+
+                if (codeText) {
+                    if (currentCompilerMode === 'full') {
+                        const code = JSON.parse(codeText);
+                        if (htmlOnlyEditorContainer.offsetParent !== null) showView('compiler');
+                        setupCompiler('full', true); 
+                        htmlEditorFull.value = code.html || '';
+                        cssEditorFull.value = code.css || '';
+                        jsEditorFull.value = code.js || '';
+                        updateFullPreview();
+                        switchTab('html');
+                    } else {
+                         htmlEditor.value = codeText;
+                         updateHtmlOnlyPreview();
+                    }
+                    hideAiModal();
+                } else {
+                     throw new Error('No valid code received from the AI.');
+                }
+            } catch (error) {
+                console.error("AI Build Error:", error);
+                let message = 'An error occurred. Please try again later.';
+                if (error.message.includes('API request failed')) message = 'Could not connect to the AI service.';
+                else if (error instanceof SyntaxError) message = 'Received an invalid response from the AI.';
+                aiErrorMessage.textContent = message;
+                aiErrorMessage.classList.remove('hidden');
+            } finally {
+                generateAiBtn.disabled = false;
+                aiLoader.classList.add('hidden');
+            }
+        }
+        
+        // --- AI Chat Modal Logic ---
+        const showAiChatModal = () => {
+            aiChatHistory.innerHTML = ''; // Clear the view
+            if (chatHistory.length === 0) {
+                // If it's a new session, add the welcome message
+                const welcomeMsg = { sender: 'ai', text: 'Hello! How can I help you modify the code?' };
+                chatHistory.push(welcomeMsg);
+            }
+            // Re-render the entire history
+            chatHistory.forEach(msg => addMessageToChat(msg.sender, msg.text));
+
+            aiChatModal.classList.remove('hidden');
+            setTimeout(() => {
+                aiChatModalContent.classList.remove('opacity-0', 'scale-95');
+            }, 10);
+        };
+
+        const hideAiChatModal = () => {
+            aiChatModalContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                aiChatModal.classList.add('hidden');
+            }, 300);
+        };
+        
+        const addMessageToChat = (sender, text) => {
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${sender === 'user' ? 'user-message' : 'ai-message'}`;
+            messageElement.textContent = text;
+            aiChatHistory.appendChild(messageElement);
+            aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+            return messageElement;
         }
 
-        const dataUri = `data:text/html;charset=utf-8,${encodeURIComponent(content)}`;
-        shareLinkInput.value = dataUri;
-        showModal();
-    }
-
-    function copyShareLink() {
-        shareLinkInput.select();
-        try {
-            document.execCommand('copy');
-            copyLinkBtn.textContent = 'Copied!';
-            setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-            copyLinkBtn.textContent = 'Error';
-             setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
+        const addThinkingIndicator = () => {
+            const thinkingElement = document.createElement('div');
+            thinkingElement.className = 'chat-message ai-message ai-thinking-bubble';
+            thinkingElement.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+            aiChatHistory.appendChild(thinkingElement);
+            aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+            return thinkingElement;
         }
-    }
-    
-    closeModalBtn.addEventListener('click', hideModal);
-    copyLinkBtn.addEventListener('click', copyShareLink);
-    deployModal.addEventListener('click', (e) => {
-        if (e.target === deployModal) hideModal();
-    });
+        
+        closeAiChatModalBtn.addEventListener('click', hideAiChatModal);
+        aiChatModal.addEventListener('click', (e) => {
+            if (e.target === aiChatModal) hideAiChatModal();
+        });
+        aiChatForm.addEventListener('submit', handleAiChatSubmit);
 
+        async function handleAiChatSubmit(e) {
+            e.preventDefault();
+            const userPrompt = aiChatInput.value.trim();
+            if (!userPrompt) return;
 
-    // Resizer logic
-    const resize = (e) => {
-        const newWidth = e.clientX - editorPane.getBoundingClientRect().left;
-        const totalWidth = mainContent.clientWidth;
-        const newWidthPercent = (newWidth / totalWidth) * 100;
-         if (newWidthPercent > 10 && newWidthPercent < 90) {
-            editorPane.style.width = newWidthPercent + '%';
+            addMessageToChat('user', userPrompt);
+            chatHistory.push({ sender: 'user', text: userPrompt });
+            aiChatInput.value = '';
+            aiChatForm.querySelector('button').disabled = true;
+            aiChatError.classList.add('hidden');
+            const thinkingIndicator = addThinkingIndicator();
+
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            let payload;
+            let systemPrompt;
+            let currentCode;
+
+            if (currentCompilerMode === 'full') {
+                currentCode = `HTML:\n\`\`\`html\n${htmlEditorFull.value}\n\`\`\`\n\nCSS:\n\`\`\`css\n${cssEditorFull.value}\n\`\`\`\n\nJavaScript:\n\`\`\`javascript\n${jsEditorFull.value}\n\`\`\``;
+                systemPrompt = `You are an AI assistant in a web code editor. The user has provided their current code. Your task is to modify this code based on their chat request. You MUST return a single, valid JSON object with the complete, updated code in the 'html', 'css', and 'js' keys. Do not omit any part of the original code unless the request requires it. Your response must only contain the JSON object.`;
+                payload = {
+                    contents: [{ parts: [{ text: `Here is the current code:\n${currentCode}\n\nUser request: "${userPrompt}"` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: { "html": { "type": "STRING" }, "css": { "type": "STRING" }, "js": { "type": "STRING" } },
+                            required: ["html", "css", "js"]
+                        }
+                    }
+                };
+            } else { // HTML Only mode
+                currentCode = htmlEditor.value;
+                systemPrompt = `You are an AI assistant in an HTML-only code editor. The user has provided their current HTML code. Your task is to modify this HTML based on their chat request. If the request involves styling (like changing colors), you MUST apply it using inline 'style' attributes or a '<style>' tag within the returned HTML. If the request involves interactivity, you MUST add the necessary JavaScript within a '<script>' tag inside the returned HTML. You must return a single, complete, and updated HTML document. It is crucial that you preserve the full document structure (<html>, <head>, <body>) from the user's original code if it exists.`;
+                 payload = {
+                    contents: [{ parts: [{ text: `Here is the current HTML code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nUser request: "${userPrompt}"` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+            }
+
+             try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+                const codeText = candidate?.content?.parts?.[0]?.text;
+
+                aiChatHistory.removeChild(thinkingIndicator);
+
+                if (codeText) {
+                     const aiResponseText = 'OK! I have updated the code for you.';
+                     addMessageToChat('ai', aiResponseText);
+                     chatHistory.push({ sender: 'ai', text: aiResponseText });
+                    if (currentCompilerMode === 'full') {
+                        const code = JSON.parse(codeText);
+                        htmlEditorFull.value = code.html ?? htmlEditorFull.value;
+                        cssEditorFull.value = code.css ?? cssEditorFull.value;
+                        jsEditorFull.value = code.js ?? jsEditorFull.value;
+                        updateFullPreview();
+                    } else { // HTML Only
+                         htmlEditor.value = codeText;
+                         updateHtmlOnlyPreview();
+                    }
+                } else {
+                     throw new Error('No valid code received from the AI.');
+                }
+            } catch (error) {
+                aiChatHistory.removeChild(thinkingIndicator);
+                console.error("AI Chat Error:", error);
+                let message = 'An error occurred. Please try again.';
+                aiChatError.textContent = message;
+                aiChatError.classList.remove('hidden');
+                const errorResponseText = 'Sorry, I ran into an issue. Please try rephrasing your request.';
+                addMessageToChat('ai', errorResponseText);
+                chatHistory.push({ sender: 'ai', text: errorResponseText });
+            } finally {
+                aiChatForm.querySelector('button').disabled = false;
+            }
         }
-    };
 
-    resizer.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        document.addEventListener('mousemove', resize);
-        document.addEventListener('mouseup', () => {
-            document.removeEventListener('mousemove', resize);
-        }, { once: true });
-    });
-    
-</script>
+
+        // --- Deploy Modal Logic ---
+        const showModal = () => {
+            deployModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('opacity-0', 'scale-95');
+            }, 10);
+        };
+
+        const hideModal = () => {
+            modalContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                deployModal.classList.add('hidden');
+            }, 300);
+        };
+
+        function handlePublish() {
+            let content = '';
+            if (currentCompilerMode === 'html') {
+                content = htmlEditor.value;
+            } else {
+                 content = `
+                    <html>
+                        <head>
+                            <title>CodeLab Export</title>
+                            <style>${cssEditorFull.value}</style>
+                        </head>
+                        <body>
+                            ${htmlEditorFull.value}
+                            <script>${jsEditorFull.value}<\/script>
+                        </body>
+                    </html>
+                `;
+            }
+
+            const dataUri = `data:text/html;charset=utf-8,${encodeURIComponent(content)}`;
+            shareLinkInput.value = dataUri;
+            showModal();
+        }
+
+        function copyShareLink() {
+            shareLinkInput.select();
+            try {
+                document.execCommand('copy');
+                copyLinkBtn.textContent = 'Copied!';
+                setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                copyLinkBtn.textContent = 'Error';
+                 setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
+            }
+        }
+        
+        closeModalBtn.addEventListener('click', hideModal);
+        copyLinkBtn.addEventListener('click', copyShareLink);
+        deployModal.addEventListener('click', (e) => {
+            if (e.target === deployModal) hideModal();
+        });
+
+
+        // Resizer logic
+        const resize = (e) => {
+            const newWidth = e.clientX - editorPane.getBoundingClientRect().left;
+            const totalWidth = mainContent.clientWidth;
+            const newWidthPercent = (newWidth / totalWidth) * 100;
+             if (newWidthPercent > 10 && newWidthPercent < 90) {
+                editorPane.style.width = newWidthPercent + '%';
+            }
+        };
+
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', () => {
+                document.removeEventListener('mousemove', resize);
+            }, { once: true });
+        });
+        
+    </script>
 </body>
 </html>
+
+
+
+
+
